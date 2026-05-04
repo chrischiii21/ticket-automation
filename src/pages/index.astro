@@ -112,6 +112,7 @@ import Layout from '../layouts/Layout.astro';
 					<div class="space-y-3 pt-2">
 						<label class="block text-sm font-medium text-slate-400">Print Layout (A4)</label>
 						<select id="layoutMode" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+							<option value="grid8" selected>2x4 Grid (8 Tickets/Page)</option>
 							<option value="stack">1x4 Stack (Maximized for Long Tickets)</option>
 							<option value="grid">2x2 Grid (Standard)</option>
 						</select>
@@ -326,7 +327,7 @@ import Layout from '../layouts/Layout.astro';
 			];
 			
 			elements.textColor.value = '#064E3B';
-			elements.layoutMode.value = 'stack';
+			elements.layoutMode.value = 'grid8';
 			elements.fillBg.checked = true;
 			
 			updateHotspotInfo();
@@ -600,13 +601,21 @@ import Layout from '../layouts/Layout.astro';
 			const pdf = new jsPDF('p', 'mm', 'a4');
 			const pageWidth = 210;
 			const pageHeight = 297;
-			const margin = 5; // Reduced margin for "Maximized" feel
+			const margin = 0; // Removed margins to maximize paper usage as requested
 			
-			const isStack = elements.layoutMode.value === 'stack';
+			const layout = elements.layoutMode.value;
 			
 			// Layout settings
-			const gridCols = isStack ? 1 : 2;
-			const gridRows = isStack ? 4 : 2;
+			let gridCols = 2;
+			let gridRows = 2;
+
+			if (layout === 'stack') {
+				gridCols = 1;
+				gridRows = 4;
+			} else if (layout === 'grid8') {
+				gridCols = 2;
+				gridRows = 4;
+			}
 			const ticketWidth = (pageWidth - (margin * 2)) / gridCols;
 			const ticketHeight = (pageHeight - (margin * 2)) / gridRows;
 			
