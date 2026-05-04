@@ -1,11 +1,709 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="TicketFlow - Advanced Ticket Automation">
+	<div class="max-w-7xl mx-auto px-4 py-12">
+		<!-- Header -->
+		<header class="text-center mb-16">
+			<h1 class="text-5xl font-extrabold mb-4 bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
+				TicketFlow
+			</h1>
+			<p class="text-slate-400 text-lg max-w-2xl mx-auto">
+				Professional ticket numbering and PDF generation. Upload your template, detect the hotspot, and generate high-DPI printable PDFs in seconds.
+			</p>
+		</header>
+
+		<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+			<!-- Left Column: Controls -->
+			<div class="lg:col-span-1 space-y-6">
+				<section class="glass p-6">
+					<h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+						<span class="w-2 h-6 bg-blue-500 rounded-full"></span>
+						1. Upload Template
+					</h2>
+					<div class="relative">
+						<input 
+							type="file" 
+							id="templateUpload" 
+							accept="image/*" 
+							class="hidden" 
+						/>
+						<label 
+							for="templateUpload" 
+							class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-700 rounded-xl cursor-pointer hover:border-blue-500 hover:bg-blue-500/5 transition-all"
+						>
+							<div class="flex flex-col items-center justify-center pt-5 pb-6">
+								<svg class="w-8 h-8 mb-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+								<p class="mb-2 text-sm text-slate-400 font-medium">Click to upload template</p>
+								<p class="text-xs text-slate-500">PNG, JPG or SVG (Max. 10MB)</p>
+							</div>
+						</label>
+					</div>
+				</section>
+
+				<section class="glass p-6 space-y-4">
+					<h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+						<span class="w-2 h-6 bg-indigo-500 rounded-full"></span>
+						2. Configuration
+					</h2>
+					
+					<div class="space-y-3">
+						<label class="block text-sm font-medium text-slate-400">Numbering Range</label>
+						<div class="grid grid-cols-2 gap-3">
+							<div>
+								<span class="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Start</span>
+								<input type="number" id="startNum" value="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" />
+							</div>
+							<div>
+								<span class="text-[10px] uppercase text-slate-500 font-bold mb-1 block">End</span>
+								<input type="number" id="endNum" value="100" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" />
+							</div>
+						</div>
+					</div>
+
+					<div class="space-y-3">
+						<label class="block text-sm font-medium text-slate-400">Styling</label>
+						<div class="grid grid-cols-2 gap-3">
+							<div class="col-span-2">
+								<span class="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Font Family</span>
+								<select id="fontFamily" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+									<option value="Arial">Arial (Sans)</option>
+									<option value="Times New Roman">Times (Serif)</option>
+									<option value="Courier New">Courier (Mono)</option>
+									<option value="Georgia">Georgia</option>
+									<option value="Verdana">Verdana</option>
+								</select>
+							</div>
+							<div>
+								<span class="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Size (px)</span>
+								<input type="number" id="fontSize" value="24" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" />
+							</div>
+							<div>
+								<span class="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Color</span>
+								<div class="flex gap-1">
+									<input type="color" id="textColor" value="#064E3B" class="flex-grow h-10 bg-slate-900 border border-slate-700 rounded-lg px-1 py-1 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer" />
+									<button id="setGreen" class="w-10 h-10 bg-[#064E3B] rounded-lg border border-slate-700" title="Reference Green"></button>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="flex items-center gap-2 py-2">
+						<input type="checkbox" id="whiteText" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500" />
+						<label for="whiteText" class="text-sm text-slate-400">Force white text (Dark bg)</label>
+					</div>
+
+					<div class="flex items-center gap-2 py-2">
+						<input type="checkbox" id="fillBg" checked class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500" />
+						<label for="fillBg" class="text-sm text-slate-400">Mask old number (Natural Blend)</label>
+					</div>
+
+					<div class="grid grid-cols-1 gap-3 pb-4" id="maskOptions">
+						<div>
+							<span class="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Mask Fill Color</span>
+							<div class="flex gap-1">
+								<input type="color" id="maskColor" value="#f1f5f9" class="flex-grow h-10 bg-slate-900 border border-slate-700 rounded-lg px-1 py-1 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer" />
+								<button id="sampleBg" class="px-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-[10px] font-bold" title="Sample from Image">SAMPLE IMAGE</button>
+							</div>
+						</div>
+					</div>
+
+					<div class="space-y-3 pt-2">
+						<label class="block text-sm font-medium text-slate-400">Print Layout (A4)</label>
+						<select id="layoutMode" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+							<option value="stack">1x4 Stack (Maximized for Long Tickets)</option>
+							<option value="grid">2x2 Grid (Standard)</option>
+						</select>
+					</div>
+
+					<div class="pt-4 space-y-3">
+						<button id="detectOcr" class="w-full py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 rounded-lg transition-colors flex items-center justify-center gap-2">
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+							Auto-Detect (OCR)
+						</button>
+						<button id="magicSetup" class="w-full py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-lg transition-colors flex items-center justify-center gap-2">
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+							One-Click Magic Setup (USJ-R)
+						</button>
+						<p class="text-[10px] text-slate-500 text-center uppercase tracking-wider font-bold">Or click and drag on image to set</p>
+					</div>
+
+					<!-- Nudge Controls -->
+					<div id="nudgeSection" class="hidden pt-2 border-t border-slate-800">
+						<label class="block text-[10px] uppercase text-slate-500 font-bold mb-2">Fine-Tune Position (Nudge)</label>
+						<div class="grid grid-cols-3 gap-2">
+							<div></div>
+							<button data-nudge="up" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg flex items-center justify-center"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 5l-5 5h10l-5-5z"/></svg></button>
+							<div></div>
+							<button data-nudge="left" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg flex items-center justify-center"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M5 10l5 5V5l-5 5z"/></svg></button>
+							<button data-nudge="down" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg flex items-center justify-center"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 15l5-5H5l5 5z"/></svg></button>
+							<button data-nudge="right" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg flex items-center justify-center"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M15 10l-5-5v10l5-5z"/></svg></button>
+						</div>
+						<div class="grid grid-cols-2 gap-2 mt-2">
+							<button data-nudge="rotate-ccw" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-[10px] font-bold">ROTATE -90°</button>
+							<button data-nudge="rotate-cw" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-[10px] font-bold">ROTATE +90°</button>
+						</div>
+						<button id="clearHotspots" class="w-full mt-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg text-xs font-bold transition-colors">
+							CLEAR ALL HOTSPOTS
+						</button>
+					</div>
+				</section>
+
+				<button id="generatePdf" class="btn-primary w-full flex items-center justify-center gap-2">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+					Generate Tickets PDF
+				</button>
+			</div>
+
+			<!-- Right Column: Preview Workspace -->
+			<div class="lg:col-span-2">
+				<div class="glass h-full min-h-[600px] flex flex-col overflow-hidden">
+					<div class="border-b border-slate-800 p-4 flex items-center justify-between">
+						<h3 class="font-bold text-slate-400 uppercase text-xs tracking-widest">Live Preview & Hotspot Editor</h3>
+						<div id="statusMessage" class="text-xs text-slate-500">Ready for upload</div>
+					</div>
+					
+					<div class="flex-grow relative bg-[#050505] flex items-center justify-center overflow-auto p-8" id="canvasContainer">
+						<div id="uploadPlaceholder" class="text-center space-y-4">
+							<div class="w-20 h-20 bg-slate-900 rounded-full flex items-center justify-center mx-auto border border-slate-800">
+								<svg class="w-10 h-10 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+							</div>
+							<p class="text-slate-600 font-medium">Your template will appear here</p>
+						</div>
+						<canvas id="editorCanvas" class="hidden cursor-crosshair shadow-2xl max-w-full"></canvas>
+					</div>
+
+					<div class="bg-slate-900/50 p-4 flex gap-6 text-[11px] text-slate-500 uppercase font-bold tracking-tighter overflow-x-auto whitespace-nowrap">
+						<div class="flex gap-2 items-center">
+							<span class="text-blue-500">DPI:</span> 300 (Print Ready)
+						</div>
+						<div class="flex gap-2 items-center">
+							<span class="text-blue-500">Scale:</span> <span id="infoScale">N/A</span>
+						</div>
+						<div class="flex gap-2 items-center">
+							<span class="text-blue-500">Dimensions:</span> <span id="infoDim">N/A</span>
+						</div>
+						<div class="flex gap-2 items-center">
+							<span class="text-blue-500">Hotspot:</span> <span id="infoHotspot">Not Set</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Progress Overlay -->
+	<div id="progressOverlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center">
+		<div class="w-full max-w-md p-8 text-center space-y-6">
+			<div class="relative w-24 h-24 mx-auto">
+				<div class="absolute inset-0 border-4 border-blue-500/20 rounded-full"></div>
+				<div class="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+			</div>
+			<div>
+				<h2 class="text-2xl font-bold mb-2" id="progressTitle">Processing Tickets</h2>
+				<p class="text-slate-400" id="progressText">Generating canvas stamps...</p>
+			</div>
+			<div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+				<div id="progressBar" class="bg-blue-500 h-full w-0 transition-all duration-300"></div>
+			</div>
+			<p class="text-xs text-slate-500 uppercase tracking-widest font-bold" id="progressStats">0 / 0</p>
+		</div>
+	</div>
+
+	<script>
+		import { createWorker } from 'tesseract.js';
+		import { jsPDF } from 'jspdf';
+
+		// State management
+		let templateImg = null;
+		let hotspots = []; // Array of { x, y, width, height, rotation }
+		let isDrawing = false;
+		let startPos = { x: 0, y: 0 };
+		
+		const elements = {
+			upload: document.getElementById('templateUpload'),
+			canvas: document.getElementById('editorCanvas'),
+			ctx: document.getElementById('editorCanvas').getContext('2d'),
+			placeholder: document.getElementById('uploadPlaceholder'),
+			status: document.getElementById('statusMessage'),
+			detectOcr: document.getElementById('detectOcr'),
+			generatePdf: document.getElementById('generatePdf'),
+			nudgeSection: document.getElementById('nudgeSection'),
+			
+			// Inputs
+			startNum: document.getElementById('startNum'),
+			endNum: document.getElementById('endNum'),
+			fontFamily: document.getElementById('fontFamily'),
+			fontSize: document.getElementById('fontSize'),
+			textColor: document.getElementById('textColor'),
+			whiteText: document.getElementById('whiteText'),
+			fillBg: document.getElementById('fillBg'),
+			maskColor: document.getElementById('maskColor'),
+			sampleBg: document.getElementById('sampleBg'),
+			layoutMode: document.getElementById('layoutMode'),
+			
+			// Info
+			infoScale: document.getElementById('infoScale'),
+			infoDim: document.getElementById('infoDim'),
+			infoHotspot: document.getElementById('infoHotspot'),
+			
+			// Progress
+			progressOverlay: document.getElementById('progressOverlay'),
+			progressBar: document.getElementById('progressBar'),
+			progressText: document.getElementById('progressText'),
+			progressTitle: document.getElementById('progressTitle'),
+			progressStats: document.getElementById('progressStats')
+		};
+
+		// --- Initialization ---
+		elements.upload.addEventListener('change', handleUpload);
+		elements.canvas.addEventListener('mousedown', startHotspot);
+		elements.canvas.addEventListener('mousemove', drawHotspot);
+		elements.canvas.addEventListener('mouseup', endHotspot);
+		elements.detectOcr.addEventListener('click', runOCR);
+		elements.generatePdf.addEventListener('click', generatePDF);
+		
+		// Nudge controls
+		document.querySelectorAll('[data-nudge]').forEach(btn => {
+			btn.addEventListener('click', () => {
+				if (hotspots.length === 0) return;
+				const last = hotspots[hotspots.length - 1];
+				const dir = btn.getAttribute('data-nudge');
+				const step = 2;
+				if (dir === 'up') last.y -= step;
+				if (dir === 'down') last.y += step;
+				if (dir === 'left') last.x -= step;
+				if (dir === 'right') last.x += step;
+				if (dir === 'rotate-cw') last.rotation = ((last.rotation || 0) + 90) % 360;
+				if (dir === 'rotate-ccw') last.rotation = ((last.rotation || 0) - 90) % 360;
+				updateHotspotInfo();
+				renderPreview();
+			});
+		});
+
+		document.getElementById('setGreen').addEventListener('click', () => {
+			elements.textColor.value = '#064E3B';
+			renderPreview();
+		});
+
+		document.getElementById('clearHotspots').addEventListener('click', () => {
+			hotspots = [];
+			elements.nudgeSection.classList.add('hidden');
+			updateHotspotInfo();
+			renderPreview();
+		});
+
+		document.getElementById('sampleBg').addEventListener('click', () => {
+			if (!templateImg || hotspots.length === 0) return;
+			const last = hotspots[hotspots.length - 1];
+			
+			// Sample pixel from template image
+			const tempCanvas = document.createElement('canvas');
+			tempCanvas.width = templateImg.naturalWidth;
+			tempCanvas.height = templateImg.naturalHeight;
+			const tCtx = tempCanvas.getContext('2d');
+			tCtx.drawImage(templateImg, 0, 0);
+			
+			const pixel = tCtx.getImageData(last.x + 2, last.y + 2, 1, 1).data;
+			const hex = "#" + ("000000" + ((pixel[0] << 16) | (pixel[1] << 8) | pixel[2]).toString(16)).slice(-6);
+			elements.maskColor.value = hex;
+			renderPreview();
+		});
+
+		document.getElementById('magicSetup').addEventListener('click', () => {
+			if (!templateImg) {
+				alert("Upload the template first!");
+				return;
+			}
+			const w = templateImg.naturalWidth;
+			const h = templateImg.naturalHeight;
+			
+			// Coordinates specifically tuned for the USJ-R template
+			hotspots = [
+				{ x: w * 0.79, y: h * 0.08, width: w * 0.08, height: h * 0.06, rotation: 0 }, // Top Right
+				{ x: w * 0.63, y: h * 0.73, width: w * 0.06, height: h * 0.08, rotation: -90 } // Stub Vertical
+			];
+			
+			elements.textColor.value = '#064E3B';
+			elements.layoutMode.value = 'stack';
+			elements.fillBg.checked = true;
+			
+			updateHotspotInfo();
+			renderPreview();
+			elements.nudgeSection.classList.remove('hidden');
+			elements.status.textContent = "Magic Setup Applied for USJ-R Template!";
+		});
+		
+		// Re-render on style change
+		[elements.fontSize, elements.textColor, elements.fontFamily, elements.whiteText].forEach(el => {
+			el.addEventListener('input', renderPreview);
+		});
+
+		async function handleUpload(e) {
+			const file = e.target.files[0];
+			if (!file) return;
+
+			elements.status.textContent = "Loading image...";
+			
+			const reader = new FileReader();
+			reader.onload = (event) => {
+				templateImg = new Image();
+				templateImg.onload = () => {
+					elements.canvas.width = templateImg.naturalWidth;
+					elements.canvas.height = templateImg.naturalHeight;
+					elements.canvas.classList.remove('hidden');
+					elements.placeholder.classList.add('hidden');
+					
+					elements.infoDim.textContent = `${templateImg.naturalWidth} x ${templateImg.naturalHeight} px`;
+					elements.infoScale.textContent = "1:1 (Original)";
+					elements.status.textContent = "Template loaded. Select hotspot.";
+					
+					renderPreview();
+				};
+				templateImg.src = event.target.result;
+			};
+			reader.readAsDataURL(file);
+		}
+
+		function renderPreview() {
+			if (!templateImg) return;
+			
+			const { canvas, ctx } = elements;
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			ctx.drawImage(templateImg, 0, 0);
+			
+			hotspots.forEach((hs, index) => {
+				// Draw hotspot box
+				ctx.save();
+				ctx.translate(hs.x + hs.width/2, hs.y + hs.height/2);
+				ctx.rotate((hs.rotation || 0) * Math.PI / 180);
+				
+				ctx.strokeStyle = index === 0 ? '#3b82f6' : '#10b981';
+				ctx.lineWidth = 4;
+				ctx.strokeRect(-hs.width/2, -hs.height/2, hs.width, hs.height);
+				ctx.fillStyle = index === 0 ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)';
+				ctx.fillRect(-hs.width/2, -hs.height/2, hs.width, hs.height);
+				
+				// Draw sample number
+				const num = elements.startNum.value.padStart(4, '0');
+				drawTicketNumber(ctx, num, { x: -hs.width/2, y: -hs.height/2, width: hs.width, height: hs.height });
+				ctx.restore();
+			});
+		}
+
+		function drawTicketNumber(ctx, text, rect) {
+			const color = elements.whiteText.checked ? '#ffffff' : elements.textColor.value;
+			const size = parseInt(elements.fontSize.value);
+			const font = elements.fontFamily.value;
+			const shouldFill = elements.fillBg.checked;
+			
+			if (shouldFill) {
+				ctx.fillStyle = elements.maskColor.value;
+				ctx.fillRect(0, 0, rect.width, rect.height);
+			}
+
+			ctx.fillStyle = color;
+			ctx.font = `bold ${size}px ${font}`;
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'middle';
+			
+			// If rect is already relative to translation, use 0,0
+			const centerX = rect.width / 2;
+			const centerY = rect.height / 2;
+			
+			ctx.fillText(text, centerX, centerY);
+		}
+
+		// --- Manual Hotspot Selection ---
+		function getMousePos(e) {
+			const rect = elements.canvas.getBoundingClientRect();
+			const scaleX = elements.canvas.width / rect.width;
+			const scaleY = elements.canvas.height / rect.height;
+			return {
+				x: (e.clientX - rect.left) * scaleX,
+				y: (e.clientY - rect.top) * scaleY
+			};
+		}
+
+		function startHotspot(e) {
+			if (!templateImg) return;
+			isDrawing = true;
+			startPos = getMousePos(e);
+			// Start a new hotspot
+			hotspots.push({
+				x: startPos.x,
+				y: startPos.y,
+				width: 0,
+				height: 0,
+				rotation: 0
+			});
+		}
+
+		function drawHotspot(e) {
+			if (!isDrawing) return;
+			const currentPos = getMousePos(e);
+			const last = hotspots[hotspots.length - 1];
+			last.x = Math.min(startPos.x, currentPos.x);
+			last.y = Math.min(startPos.y, currentPos.y);
+			last.width = Math.abs(currentPos.x - startPos.x);
+			last.height = Math.abs(currentPos.y - startPos.y);
+			renderPreview();
+		}
+
+		function endHotspot() {
+			if (!isDrawing) return;
+			isDrawing = false;
+			const last = hotspots[hotspots.length - 1];
+			if (last && last.width < 5) {
+				hotspots.pop(); // Remove if too small
+			} else {
+				updateHotspotInfo();
+				elements.status.textContent = `Hotspot ${hotspots.length} set. Click again for more.`;
+				elements.nudgeSection.classList.remove('hidden');
+			}
+			renderPreview();
+		}
+
+		function updateHotspotInfo() {
+			if (hotspots.length === 0) {
+				elements.infoHotspot.textContent = "Not Set";
+				return;
+			}
+			elements.infoHotspot.textContent = `${hotspots.length} Hotspot(s) active`;
+		}
+
+		// --- OCR Detection ---
+		async function runOCR() {
+			if (!templateImg) {
+				alert("Please upload a template first.");
+				return;
+			}
+			
+			elements.detectOcr.disabled = true;
+			elements.detectOcr.classList.add('opacity-50');
+			
+			try {
+				elements.status.textContent = "Initializing Multi-Pass OCR...";
+				const worker = await createWorker('eng', 1, {
+					logger: m => {
+						if (m.status === 'recognizing text') {
+							elements.status.textContent = `Analyzing: ${Math.round(m.progress * 100)}%`;
+						}
+					}
+				});
+
+				// Pass 1: Normal orientation
+				elements.status.textContent = "Scanning Horizontal Text...";
+				const result1 = await worker.recognize(templateImg.src);
+				
+				// Pass 2: Rotated orientation (for vertical text)
+				elements.status.textContent = "Scanning Vertical Text...";
+				const rotatedCanvas = document.createElement('canvas');
+				rotatedCanvas.width = templateImg.naturalHeight;
+				rotatedCanvas.height = templateImg.naturalWidth;
+				const rCtx = rotatedCanvas.getContext('2d');
+				rCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
+				rCtx.rotate(90 * Math.PI / 180);
+				rCtx.drawImage(templateImg, -templateImg.naturalWidth / 2, -templateImg.naturalHeight / 2);
+				const result2 = await worker.recognize(rotatedCanvas.toDataURL());
+
+				const words1 = result1?.data?.words || [];
+				const words2 = result2?.data?.words || [];
+				
+				const keywords = ["no.", "#", "000", "no", "number", "0001", "ticket", "ooo1", "0o", "o0", "oo"];
+				
+				let foundHotspots = [];
+
+				// Process Pass 1
+				words1.forEach(target => {
+					if (keywords.some(k => target.text && target.text.toLowerCase().includes(k))) {
+						let hs = {
+							x: target.bbox.x0,
+							y: target.bbox.y0,
+							width: target.bbox.x1 - target.bbox.x0,
+							height: target.bbox.y1 - target.bbox.y0,
+							rotation: 0
+						};
+						if (target.text.toLowerCase().includes('no') || target.text.toLowerCase().includes('ticket')) {
+							hs.x += hs.width * 1.5;
+							hs.width *= 1.2;
+						}
+						foundHotspots.push(hs);
+					}
+				});
+
+				// Process Pass 2 (Convert back to original coordinates)
+				words2.forEach(target => {
+					if (keywords.some(k => target.text && target.text.toLowerCase().includes(k))) {
+						// In rotated view: x' = y, y' = (width - x)
+						// So: x = width' - target.bbox.y1, y = target.bbox.x0
+						let hs = {
+							x: templateImg.naturalWidth - target.bbox.y1,
+							y: target.bbox.x0,
+							width: target.bbox.y1 - target.bbox.y0,
+							height: target.bbox.x1 - target.bbox.x0,
+							rotation: -90
+						};
+						if (target.text.toLowerCase().includes('no') || target.text.toLowerCase().includes('ticket')) {
+							hs.y -= hs.height * 1.5;
+							hs.height *= 1.2;
+						}
+						foundHotspots.push(hs);
+					}
+				});
+
+				// Final Merge & Deduplicate
+				hotspots = foundHotspots.filter((hs, index, self) => 
+					index === self.findIndex((t) => (
+						Math.abs(t.x - hs.x) < 40 && Math.abs(t.y - hs.y) < 40
+					))
+				);
+				
+				renderPreview();
+				elements.status.textContent = `Found ${hotspots.length} hotspots.`;
+				updateHotspotInfo();
+				elements.nudgeSection.classList.remove('hidden');
+				
+				await worker.terminate();
+			} catch (err) {
+				console.error("OCR Error:", err);
+				alert(`OCR Failed: ${err.message}. Manual override: click/drag on the numbers!`);
+				elements.status.textContent = "OCR Failed. Use manual selection.";
+			} finally {
+				elements.detectOcr.disabled = false;
+				elements.detectOcr.classList.remove('opacity-50');
+			}
+		}
+
+		// --- PDF Generation ---
+		async function generatePDF() {
+			if (!templateImg || hotspots.length === 0) {
+				alert("Please upload a template and set at least one hotspot.");
+				return;
+			}
+
+			const start = parseInt(elements.startNum.value);
+			const end = parseInt(elements.endNum.value);
+			const count = end - start + 1;
+			
+			if (count <= 0) {
+				alert("Invalid range.");
+				return;
+			}
+
+			elements.progressOverlay.classList.remove('hidden');
+			elements.progressTitle.textContent = "Generating PDF";
+			elements.progressStats.textContent = `0 / ${count}`;
+
+			// PDF Constants
+			const pdf = new jsPDF('p', 'mm', 'a4');
+			const pageWidth = 210;
+			const pageHeight = 297;
+			const margin = 5; // Reduced margin for "Maximized" feel
+			
+			const isStack = elements.layoutMode.value === 'stack';
+			
+			// Layout settings
+			const gridCols = isStack ? 1 : 2;
+			const gridRows = isStack ? 4 : 2;
+			const ticketWidth = (pageWidth - (margin * 2)) / gridCols;
+			const ticketHeight = (pageHeight - (margin * 2)) / gridRows;
+			
+			// Off-screen canvas for rendering
+			const renderCanvas = document.createElement('canvas');
+			renderCanvas.width = templateImg.naturalWidth;
+			renderCanvas.height = templateImg.naturalHeight;
+			const renderCtx = renderCanvas.getContext('2d');
+			
+			try {
+				for (let i = 0; i < count; i++) {
+					const currentNum = (start + i).toString().padStart(4, '0');
+					
+					// Update progress
+					elements.progressBar.style.width = `${((i + 1) / count) * 100}%`;
+					elements.progressStats.textContent = `${i + 1} / ${count}`;
+					elements.progressText.textContent = `Processing ticket #${currentNum}`;
+
+					// Render ticket
+					renderCtx.clearRect(0, 0, renderCanvas.width, renderCanvas.height);
+					renderCtx.drawImage(templateImg, 0, 0);
+					
+					hotspots.forEach(hs => {
+						renderCtx.save();
+						renderCtx.translate(hs.x + hs.width/2, hs.y + hs.height/2);
+						renderCtx.rotate((hs.rotation || 0) * Math.PI / 180);
+						drawTicketNumber(renderCtx, currentNum, { x: -hs.width/2, y: -hs.height/2, width: hs.width, height: hs.height });
+						renderCtx.restore();
+					});
+					
+					const ticketData = renderCanvas.toDataURL('image/jpeg', 0.95);
+					
+					// Calculate position in grid
+					const ticketsPerPage = gridCols * gridRows;
+					const indexOnPage = i % ticketsPerPage;
+					const col = indexOnPage % gridCols;
+					const row = Math.floor(indexOnPage / gridCols);
+					
+					const x = margin + (col * ticketWidth);
+					const y = margin + (row * ticketHeight);
+					
+					// Maintaining aspect ratio within the quadrant
+					const imgAspect = renderCanvas.width / renderCanvas.height;
+					const quadAspect = ticketWidth / ticketHeight;
+					
+					let drawW = ticketWidth;
+					let drawH = ticketHeight;
+					
+					// Maximize usage: If it's a wide ticket, let it take full width
+					if (imgAspect > quadAspect) {
+						drawH = ticketWidth / imgAspect;
+					} else {
+						drawW = ticketHeight * imgAspect;
+					}
+
+					// Center in quadrant
+					const finalX = x + (ticketWidth - drawW) / 2;
+					const finalY = y + (ticketHeight - drawH) / 2;
+
+					pdf.addImage(ticketData, 'JPEG', finalX, finalY, drawW, drawH, undefined, 'FAST');
+
+					// Add new page
+					if (indexOnPage === (ticketsPerPage - 1) && i < count - 1) {
+						pdf.addPage();
+					}
+
+					// Yield to UI thread every few tickets to keep it responsive
+					if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+				}
+
+				pdf.save(`Tickets_${start}-${end}.pdf`);
+				elements.status.textContent = "PDF Generated and downloaded!";
+			} catch (error) {
+				console.error("PDF Generation Error:", error);
+				alert("Error generating PDF. Check console for details.");
+				elements.status.textContent = "Error generating PDF.";
+			} finally {
+				elements.progressOverlay.classList.add('hidden');
+			}
+		}
+	</script>
 </Layout>
+
+<style>
+	/* Custom styles for better scrollbars in dark mode */
+	#canvasContainer::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+	#canvasContainer::-webkit-scrollbar-track {
+		background: #050505;
+	}
+	#canvasContainer::-webkit-scrollbar-thumb {
+		background: #1e293b;
+		border-radius: 4px;
+	}
+	#canvasContainer::-webkit-scrollbar-thumb:hover {
+		background: #334155;
+	}
+</style>
