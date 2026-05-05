@@ -283,6 +283,8 @@ import Layout from '../layouts/Layout.astro';
 		let hotspots = []; // Array of { x, y, width, height, rotation }
 		let selectedIndex = -1;
 		let isDrawing = false;
+		let isDraggingHotspot = false;
+		let dragOffset = { x: 0, y: 0 };
 		let startPos = { x: 0, y: 0 };
 		
 		const elements = {
@@ -578,6 +580,11 @@ import Layout from '../layouts/Layout.astro';
 			if (clickedIndex !== -1) {
 				selectedIndex = clickedIndex;
 				isDrawing = false;
+				isDraggingHotspot = true;
+				dragOffset = {
+					x: pos.x - hotspots[clickedIndex].x,
+					y: pos.y - hotspots[clickedIndex].y
+				};
 				renderPreview();
 				updateHotspotInfo();
 				return;
@@ -597,8 +604,17 @@ import Layout from '../layouts/Layout.astro';
 		}
 
 		function drawHotspot(e) {
-			if (!isDrawing) return;
 			const currentPos = getMousePos(e);
+
+			if (isDraggingHotspot && selectedIndex !== -1) {
+				const hs = hotspots[selectedIndex];
+				hs.x = currentPos.x - dragOffset.x;
+				hs.y = currentPos.y - dragOffset.y;
+				renderPreview();
+				return;
+			}
+
+			if (!isDrawing) return;
 			const last = hotspots[hotspots.length - 1];
 			last.x = Math.min(startPos.x, currentPos.x);
 			last.y = Math.min(startPos.y, currentPos.y);
@@ -608,6 +624,7 @@ import Layout from '../layouts/Layout.astro';
 		}
 
 		function endHotspot() {
+			isDraggingHotspot = false;
 			if (!isDrawing) return;
 			isDrawing = false;
 			const last = hotspots[hotspots.length - 1];
