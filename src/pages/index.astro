@@ -68,6 +68,7 @@ import Layout from '../layouts/Layout.astro';
 							<div class="col-span-2">
 								<span class="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Font Family</span>
 								<select id="fontFamily" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+									<option value="Poppins" selected>Poppins (Modern)</option>
 									<option value="Arial">Arial (Sans)</option>
 									<option value="Times New Roman">Times (Serif)</option>
 									<option value="Courier New">Courier (Mono)</option>
@@ -112,11 +113,45 @@ import Layout from '../layouts/Layout.astro';
 					<div class="space-y-3 pt-2">
 						<label class="block text-sm font-medium text-slate-400">Print Layout (A4)</label>
 						<select id="layoutMode" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
-							<option value="landscape6" selected>3x2 Grid (Landscape - 6 Tickets/Page)</option>
-							<option value="grid8">2x4 Grid (8 Tickets/Page)</option>
+							<option value="landscape8" selected>4x2 Grid (8 Tickets/Page - Landscape)</option>
+							<option value="landscape9">3x3 Grid (9 Tickets/Page - Landscape)</option>
+							<option value="landscape6">3x2 Grid (6 Tickets/Page - Landscape)</option>
+							<option value="grid8">2x4 Grid (8 Tickets/Page - Portrait)</option>
 							<option value="stack">1x4 Stack (Maximized for Long Tickets)</option>
-							<option value="grid">2x2 Grid (Standard)</option>
+							<option value="custom">Custom Grid (Manual Rows/Cols)</option>
 						</select>
+					</div>
+
+					<div id="customGridParams" class="hidden space-y-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+						<div class="grid grid-cols-2 gap-3">
+							<div>
+								<span class="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Columns</span>
+								<input type="number" id="customCols" value="2" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-sm outline-none" />
+							</div>
+							<div>
+								<span class="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Rows</span>
+								<input type="number" id="customRows" value="4" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-sm outline-none" />
+							</div>
+						</div>
+					</div>
+
+					<div class="space-y-3 pt-2">
+						<div class="flex justify-between items-center">
+							<label class="text-sm font-medium text-slate-400">Scale / Padding</label>
+							<span id="scaleValue" class="text-xs font-bold text-blue-400">100%</span>
+						</div>
+						<input type="range" id="ticketScale" min="50" max="150" value="100" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500" />
+					</div>
+
+					<div class="flex flex-col gap-2 py-2">
+						<div class="flex items-center gap-2">
+							<input type="checkbox" id="stretchFill" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500" />
+							<label for="stretchFill" class="text-sm text-slate-400">Stretch Width (Ignore Aspect)</label>
+						</div>
+						<div class="flex items-center gap-2">
+							<input type="checkbox" id="noGaps" checked class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500" />
+							<label for="noGaps" class="text-sm text-slate-400">Force Pack (Maximize Area)</label>
+						</div>
 					</div>
 
 					<div class="pt-4 space-y-3">
@@ -161,9 +196,16 @@ import Layout from '../layouts/Layout.astro';
 			<!-- Right Column: Preview Workspace -->
 			<div class="lg:col-span-2">
 				<div class="glass h-full min-h-[600px] flex flex-col overflow-hidden">
-					<div class="border-b border-slate-800 p-4 flex items-center justify-between">
-						<h3 class="font-bold text-slate-400 uppercase text-xs tracking-widest">Live Preview & Hotspot Editor</h3>
-						<div class="flex items-center gap-2">
+					<div class="border-b border-slate-800 flex items-center justify-between px-2">
+						<div class="flex">
+							<button id="tabEditor" class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-blue-500 border-b-2 border-blue-500 transition-colors">
+								Hotspot Editor
+							</button>
+							<button id="tabPreview" class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-slate-300 transition-colors">
+								Print Preview (Page 1)
+							</button>
+						</div>
+						<div class="flex items-center gap-2 pr-4">
 							<div id="orientationBadge" class="hidden px-2 py-0.5 bg-blue-500/20 text-blue-400 text-[10px] font-bold rounded-md border border-blue-500/30 flex items-center gap-1">
 								<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
 								LANDSCAPE
@@ -172,14 +214,27 @@ import Layout from '../layouts/Layout.astro';
 						</div>
 					</div>
 					
-					<div class="flex-grow relative bg-[#050505] flex items-center justify-center overflow-auto p-8" id="canvasContainer">
-						<div id="uploadPlaceholder" class="text-center space-y-4">
-							<div class="w-20 h-20 bg-slate-900 rounded-full flex items-center justify-center mx-auto border border-slate-800">
-								<svg class="w-10 h-10 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+					<div class="flex-grow relative bg-[#050505] flex items-center justify-center overflow-auto p-4 md:p-8" id="canvasContainer">
+						<!-- Editor View -->
+						<div id="editorView" class="w-full h-full flex items-center justify-center">
+							<div id="uploadPlaceholder" class="text-center space-y-4">
+								<div class="w-20 h-20 bg-slate-900 rounded-full flex items-center justify-center mx-auto border border-slate-800">
+									<svg class="w-10 h-10 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+								</div>
+								<p class="text-slate-600 font-medium">Your template will appear here</p>
 							</div>
-							<p class="text-slate-600 font-medium">Your template will appear here</p>
+							<canvas id="editorCanvas" class="hidden cursor-crosshair shadow-2xl max-w-full"></canvas>
 						</div>
-						<canvas id="editorCanvas" class="hidden cursor-crosshair shadow-2xl max-w-full"></canvas>
+
+						<!-- Page Preview View -->
+						<div id="previewView" class="hidden w-full h-full flex flex-col items-center gap-4 py-4">
+							<div class="bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+								A4 Paper Visualization (Scaled for Screen)
+							</div>
+							<div class="bg-white shadow-[0_0_50px_rgba(0,0,0,0.5)] relative">
+								<canvas id="pagePreviewCanvas" class="max-w-full"></canvas>
+							</div>
+						</div>
 					</div>
 
 					<div class="bg-slate-900/50 p-4 flex gap-6 text-[11px] text-slate-500 uppercase font-bold tracking-tighter overflow-x-auto whitespace-nowrap">
@@ -226,6 +281,7 @@ import Layout from '../layouts/Layout.astro';
 		// State management
 		let templateImg = null;
 		let hotspots = []; // Array of { x, y, width, height, rotation }
+		let selectedIndex = -1;
 		let isDrawing = false;
 		let startPos = { x: 0, y: 0 };
 		
@@ -250,6 +306,13 @@ import Layout from '../layouts/Layout.astro';
 			maskColor: document.getElementById('maskColor'),
 			sampleBg: document.getElementById('sampleBg'),
 			layoutMode: document.getElementById('layoutMode'),
+			stretchFill: document.getElementById('stretchFill'),
+			noGaps: document.getElementById('noGaps'),
+			ticketScale: document.getElementById('ticketScale'),
+			scaleValue: document.getElementById('scaleValue'),
+			customGridParams: document.getElementById('customGridParams'),
+			customCols: document.getElementById('customCols'),
+			customRows: document.getElementById('customRows'),
 			
 			// Info
 			infoScale: document.getElementById('infoScale'),
@@ -261,7 +324,14 @@ import Layout from '../layouts/Layout.astro';
 			progressBar: document.getElementById('progressBar'),
 			progressText: document.getElementById('progressText'),
 			progressTitle: document.getElementById('progressTitle'),
-			progressStats: document.getElementById('progressStats')
+			progressStats: document.getElementById('progressStats'),
+
+			// Tabs
+			tabEditor: document.getElementById('tabEditor'),
+			tabPreview: document.getElementById('tabPreview'),
+			editorView: document.getElementById('editorView'),
+			previewView: document.getElementById('previewView'),
+			pagePreviewCanvas: document.getElementById('pagePreviewCanvas')
 		};
 
 		// --- Initialization ---
@@ -275,16 +345,16 @@ import Layout from '../layouts/Layout.astro';
 		// Nudge controls
 		document.querySelectorAll('[data-nudge]').forEach(btn => {
 			btn.addEventListener('click', () => {
-				if (hotspots.length === 0) return;
-				const last = hotspots[hotspots.length - 1];
+				if (selectedIndex === -1 || !hotspots[selectedIndex]) return;
+				const current = hotspots[selectedIndex];
 				const dir = btn.getAttribute('data-nudge');
 				const step = 2;
-				if (dir === 'up') last.y -= step;
-				if (dir === 'down') last.y += step;
-				if (dir === 'left') last.x -= step;
-				if (dir === 'right') last.x += step;
-				if (dir === 'rotate-cw') last.rotation = ((last.rotation || 0) + 90) % 360;
-				if (dir === 'rotate-ccw') last.rotation = ((last.rotation || 0) - 90) % 360;
+				if (dir === 'up') current.y -= step;
+				if (dir === 'down') current.y += step;
+				if (dir === 'left') current.x -= step;
+				if (dir === 'right') current.x += step;
+				if (dir === 'rotate-cw') current.rotation = ((current.rotation || 0) + 90) % 360;
+				if (dir === 'rotate-ccw') current.rotation = ((current.rotation || 0) - 90) % 360;
 				updateHotspotInfo();
 				renderPreview();
 			});
@@ -295,8 +365,48 @@ import Layout from '../layouts/Layout.astro';
 			renderPreview();
 		});
 
+		elements.ticketScale.addEventListener('input', () => {
+			elements.scaleValue.textContent = `${elements.ticketScale.value}%`;
+		});
+
+		elements.layoutMode.addEventListener('change', () => {
+			if (elements.layoutMode.value === 'custom') {
+				elements.customGridParams.classList.remove('hidden');
+			} else {
+				elements.customGridParams.classList.add('hidden');
+			}
+			updateOrientationBadge();
+			if (elements.previewView.classList.contains('hidden')) return;
+			updatePagePreview();
+		});
+
+		// Tab Switching
+		elements.tabEditor.addEventListener('click', () => {
+			elements.tabEditor.classList.add('text-blue-500', 'border-b-2', 'border-blue-500');
+			elements.tabEditor.classList.remove('text-slate-500');
+			elements.tabPreview.classList.add('text-slate-500');
+			elements.tabPreview.classList.remove('text-blue-500', 'border-b-2', 'border-blue-500');
+			elements.editorView.classList.remove('hidden');
+			elements.previewView.classList.add('hidden');
+		});
+
+		elements.tabPreview.addEventListener('click', () => {
+			if (!templateImg) {
+				alert("Upload a template first to see a preview!");
+				return;
+			}
+			elements.tabPreview.classList.add('text-blue-500', 'border-b-2', 'border-blue-500');
+			elements.tabPreview.classList.remove('text-slate-500');
+			elements.tabEditor.classList.add('text-slate-500');
+			elements.tabEditor.classList.remove('text-blue-500', 'border-b-2', 'border-blue-500');
+			elements.previewView.classList.remove('hidden');
+			elements.editorView.classList.add('hidden');
+			updatePagePreview();
+		});
+
 		document.getElementById('clearHotspots').addEventListener('click', () => {
 			hotspots = [];
+			selectedIndex = -1;
 			elements.nudgeSection.classList.add('hidden');
 			updateHotspotInfo();
 			renderPreview();
@@ -335,18 +445,24 @@ import Layout from '../layouts/Layout.astro';
 			];
 			
 			elements.textColor.value = '#064E3B';
-			elements.layoutMode.value = 'landscape6';
+			elements.layoutMode.value = 'landscape8';
 			elements.fillBg.checked = true;
 			
 			updateHotspotInfo();
 			renderPreview();
+			selectedIndex = hotspots.length - 1;
 			elements.nudgeSection.classList.remove('hidden');
 			elements.status.textContent = "Magic Setup Applied for USJ-R Template!";
 		});
 		
 		// Re-render on style change
-		[elements.fontSize, elements.textColor, elements.fontFamily, elements.whiteText].forEach(el => {
-			el.addEventListener('input', renderPreview);
+		[elements.fontSize, elements.textColor, elements.fontFamily, elements.whiteText, elements.ticketScale, elements.stretchFill, elements.noGaps].forEach(el => {
+			el.addEventListener('input', () => {
+				renderPreview();
+				if (!elements.previewView.classList.contains('hidden')) {
+					updatePagePreview();
+				}
+			});
 		});
 
 		async function handleUpload(e) {
@@ -377,7 +493,7 @@ import Layout from '../layouts/Layout.astro';
 		}
 
 		function updateOrientationBadge() {
-			const isLandscape = elements.layoutMode.value === 'landscape6';
+			const isLandscape = elements.layoutMode.value.startsWith('landscape');
 			const badge = document.getElementById('orientationBadge');
 			if (isLandscape) {
 				badge.classList.remove('hidden');
@@ -401,10 +517,11 @@ import Layout from '../layouts/Layout.astro';
 				ctx.translate(hs.x + hs.width/2, hs.y + hs.height/2);
 				ctx.rotate((hs.rotation || 0) * Math.PI / 180);
 				
-				ctx.strokeStyle = index === 0 ? '#3b82f6' : '#10b981';
-				ctx.lineWidth = 4;
+				const isSelected = index === selectedIndex;
+				ctx.strokeStyle = isSelected ? '#3b82f6' : '#10b981';
+				ctx.lineWidth = isSelected ? 6 : 4;
 				ctx.strokeRect(-hs.width/2, -hs.height/2, hs.width, hs.height);
-				ctx.fillStyle = index === 0 ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)';
+				ctx.fillStyle = isSelected ? 'rgba(59, 130, 246, 0.2)' : 'rgba(16, 185, 129, 0.1)';
 				ctx.fillRect(-hs.width/2, -hs.height/2, hs.width, hs.height);
 				
 				// Draw sample number
@@ -450,8 +567,24 @@ import Layout from '../layouts/Layout.astro';
 
 		function startHotspot(e) {
 			if (!templateImg) return;
+			const pos = getMousePos(e);
+
+			// Check if we clicked on an existing hotspot
+			const clickedIndex = hotspots.findIndex(hs => 
+				pos.x >= hs.x && pos.x <= hs.x + hs.width &&
+				pos.y >= hs.y && pos.y <= hs.y + hs.height
+			);
+
+			if (clickedIndex !== -1) {
+				selectedIndex = clickedIndex;
+				isDrawing = false;
+				renderPreview();
+				updateHotspotInfo();
+				return;
+			}
+
 			isDrawing = true;
-			startPos = getMousePos(e);
+			startPos = pos;
 			// Start a new hotspot
 			hotspots.push({
 				x: startPos.x,
@@ -460,6 +593,7 @@ import Layout from '../layouts/Layout.astro';
 				height: 0,
 				rotation: 0
 			});
+			selectedIndex = hotspots.length - 1;
 		}
 
 		function drawHotspot(e) {
@@ -492,7 +626,8 @@ import Layout from '../layouts/Layout.astro';
 				elements.infoHotspot.textContent = "Not Set";
 				return;
 			}
-			elements.infoHotspot.textContent = `${hotspots.length} Hotspot(s) active`;
+			const selectedText = selectedIndex !== -1 ? `(Editing #${selectedIndex + 1})` : "";
+			elements.infoHotspot.textContent = `${hotspots.length} Hotspot(s) ${selectedText}`;
 		}
 
 		// --- OCR Detection ---
@@ -619,7 +754,7 @@ import Layout from '../layouts/Layout.astro';
 			elements.progressStats.textContent = `0 / ${count}`;
 
 			const layout = elements.layoutMode.value;
-			const isLandscape = layout === 'landscape6';
+			const isLandscape = layout.startsWith('landscape');
 			
 			// PDF Constants
 			const pdf = new jsPDF(isLandscape ? 'l' : 'p', 'mm', 'a4');
@@ -637,12 +772,22 @@ import Layout from '../layouts/Layout.astro';
 			} else if (layout === 'grid8') {
 				gridCols = 2;
 				gridRows = 4;
-			} else if (layout === 'landscape6') {
+			} else if (layout === 'landscape8') {
 				gridCols = 2;
+				gridRows = 4;
+			} else if (layout === 'landscape9') {
+				gridCols = 3;
 				gridRows = 3;
+			} else if (layout === 'custom') {
+				gridCols = parseInt(elements.customCols.value) || 2;
+				gridRows = parseInt(elements.customRows.value) || 4;
 			}
+
 			const ticketWidth = (pageWidth - (margin * 2)) / gridCols;
 			const ticketHeight = (pageHeight - (margin * 2)) / gridRows;
+			const shouldStretch = elements.stretchFill.checked;
+			const shouldPack = elements.noGaps.checked;
+			const scaleFactor = (parseInt(elements.ticketScale.value) || 100) / 100;
 			
 			// Off-screen canvas for rendering
 			const renderCanvas = document.createElement('canvas');
@@ -689,16 +834,35 @@ import Layout from '../layouts/Layout.astro';
 					let drawW = ticketWidth;
 					let drawH = ticketHeight;
 					
-					// Maximize usage: If it's a wide ticket, let it take full width
-					if (imgAspect > quadAspect) {
-						drawH = ticketWidth / imgAspect;
+					if (shouldStretch) {
+						drawW = ticketWidth * scaleFactor;
+						drawH = Math.min(ticketHeight, ticketWidth / imgAspect) * scaleFactor;
 					} else {
-						drawW = ticketHeight * imgAspect;
+						if (imgAspect > quadAspect) {
+							drawW = ticketWidth * scaleFactor;
+							drawH = (ticketWidth / imgAspect) * scaleFactor;
+						} else {
+							drawH = ticketHeight * scaleFactor;
+							drawW = (ticketHeight * imgAspect) * scaleFactor;
+						}
 					}
 
-					// Center in quadrant
-					const finalX = x + (ticketWidth - drawW) / 2;
-					const finalY = y + (ticketHeight - drawH) / 2;
+					// Positioning
+					let finalX, finalY;
+					
+					if (shouldPack) {
+						// Center the entire grid together to maximize visible area
+						const totalGridWidth = drawW * gridCols;
+						const totalGridHeight = drawH * gridRows;
+						const offsetX = (pageWidth - totalGridWidth) / 2;
+						const offsetY = (pageHeight - totalGridHeight) / 2;
+						finalX = offsetX + (col * drawW);
+						finalY = offsetY + (row * drawH);
+					} else {
+						// Center each ticket in its own quadrant (Standard)
+						finalX = margin + (col * ticketWidth) + (ticketWidth - drawW) / 2;
+						finalY = margin + (row * ticketHeight) + (ticketHeight - drawH) / 2;
+					}
 
 					pdf.addImage(ticketData, 'JPEG', finalX, finalY, drawW, drawH, undefined, 'FAST');
 
@@ -721,6 +885,109 @@ import Layout from '../layouts/Layout.astro';
 				elements.status.textContent = "Error generating PDF.";
 			} finally {
 				elements.progressOverlay.classList.add('hidden');
+			}
+		}
+
+		async function updatePagePreview() {
+			if (!templateImg || hotspots.length === 0) return;
+
+			const layout = elements.layoutMode.value;
+			const isLandscape = layout.startsWith('landscape');
+			
+			// A4 size in px (at 72 DPI for screen display)
+			const pxWidth = isLandscape ? 842 : 595;
+			const pxHeight = isLandscape ? 595 : 842;
+			
+			const canvas = elements.pagePreviewCanvas;
+			const ctx = canvas.getContext('2d');
+			canvas.width = pxWidth * 2; // High res display
+			canvas.height = pxHeight * 2;
+			canvas.style.width = pxWidth + 'px';
+			canvas.style.height = pxHeight + 'px';
+			ctx.scale(2, 2);
+
+			ctx.fillStyle = '#ffffff';
+			ctx.fillRect(0, 0, pxWidth, pxHeight);
+
+			// Grid settings
+			let gridCols = 2, gridRows = 2;
+			if (layout === 'stack') { gridCols = 1; gridRows = 4; }
+			else if (layout === 'grid8') { gridCols = 2; gridRows = 4; }
+			else if (layout === 'landscape6') { gridCols = 2; gridRows = 3; }
+			else if (layout === 'landscape8') { gridCols = 2; gridRows = 4; }
+			else if (layout === 'landscape9') { gridCols = 3; gridRows = 3; }
+			else if (layout === 'custom') {
+				gridCols = parseInt(elements.customCols.value) || 2;
+				gridRows = parseInt(elements.customRows.value) || 4;
+			}
+
+			const ticketWidth = pxWidth / gridCols;
+			const ticketHeight = pxHeight / gridRows;
+			const imgAspect = templateImg.naturalWidth / templateImg.naturalHeight;
+			const quadAspect = ticketWidth / ticketHeight;
+			const shouldStretch = elements.stretchFill.checked;
+			const shouldPack = elements.noGaps.checked;
+			const scaleFactor = (parseInt(elements.ticketScale.value) || 100) / 100;
+
+			let drawW = ticketWidth, drawH = ticketHeight;
+			if (shouldStretch) {
+				drawW = ticketWidth * scaleFactor;
+				drawH = Math.min(ticketHeight, ticketWidth / imgAspect) * scaleFactor;
+			} else {
+				if (imgAspect > quadAspect) {
+					drawW = ticketWidth * scaleFactor;
+					drawH = (ticketWidth / imgAspect) * scaleFactor;
+				} else {
+					drawH = ticketHeight * scaleFactor;
+					drawW = (ticketHeight * imgAspect) * scaleFactor;
+				}
+			}
+
+			const offsetX = shouldPack ? (pxWidth - (drawW * gridCols)) / 2 : 0;
+			const offsetY = shouldPack ? (pxHeight - (drawH * gridRows)) / 2 : 0;
+
+			const ticketsPerPage = gridCols * gridRows;
+			const startNum = parseInt(elements.startNum.value) || 1;
+
+			// Off-screen canvas for a single ticket
+			const tCanvas = document.createElement('canvas');
+			tCanvas.width = templateImg.naturalWidth;
+			tCanvas.height = templateImg.naturalHeight;
+			const tCtx = tCanvas.getContext('2d');
+
+			for (let i = 0; i < ticketsPerPage; i++) {
+				const col = i % gridCols;
+				const row = Math.floor(i / gridCols);
+				const currentNum = (startNum + i).toString().padStart(4, '0');
+
+				// Render ticket to temp canvas
+				tCtx.clearRect(0, 0, tCanvas.width, tCanvas.height);
+				tCtx.drawImage(templateImg, 0, 0);
+				hotspots.forEach(hs => {
+					tCtx.save();
+					tCtx.translate(hs.x + hs.width/2, hs.y + hs.height/2);
+					tCtx.rotate((hs.rotation || 0) * Math.PI / 180);
+					drawTicketNumber(tCtx, currentNum, { x: -hs.width/2, y: -hs.height/2, width: hs.width, height: hs.height });
+					tCtx.restore();
+				});
+
+				let finalX, finalY;
+				if (shouldPack) {
+					finalX = offsetX + (col * drawW);
+					finalY = offsetY + (row * drawH);
+				} else {
+					finalX = (col * ticketWidth) + (ticketWidth - drawW) / 2;
+					finalY = (row * ticketHeight) + (ticketHeight - drawH) / 2;
+				}
+
+				ctx.drawImage(tCanvas, finalX, finalY, drawW, drawH);
+				
+				// Optional: Draw cut lines
+				ctx.strokeStyle = '#e2e8f0';
+				ctx.lineWidth = 0.5;
+				ctx.setLineDash([5, 5]);
+				ctx.strokeRect(finalX, finalY, drawW, drawH);
+				ctx.setLineDash([]);
 			}
 		}
 	</script>
