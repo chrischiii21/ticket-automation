@@ -96,7 +96,7 @@ import Layout from '../layouts/Layout.astro';
 					</div>
 
 					<div class="flex items-center gap-2 py-2">
-						<input type="checkbox" id="fillBg" checked class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500" />
+						<input type="checkbox" id="fillBg" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500" />
 						<label for="fillBg" class="text-sm text-slate-400">Mask old number (Natural Blend)</label>
 					</div>
 
@@ -105,7 +105,8 @@ import Layout from '../layouts/Layout.astro';
 							<span class="text-[10px] uppercase text-slate-500 font-bold mb-1 block">Mask Fill Color</span>
 							<div class="flex gap-1">
 								<input type="color" id="maskColor" value="#f1f5f9" class="flex-grow h-10 bg-slate-900 border border-slate-700 rounded-lg px-1 py-1 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer" />
-								<button id="sampleBg" class="px-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-[10px] font-bold" title="Sample from Image">SAMPLE IMAGE</button>
+								<button id="sampleBg" class="px-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-[10px] font-bold" title="Sample from Image">SAMPLE</button>
+								<button id="setTransparent" class="px-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-[10px] font-bold" title="Set to Transparent / No Fill">CLEAR</button>
 							</div>
 						</div>
 					</div>
@@ -415,8 +416,8 @@ import Layout from '../layouts/Layout.astro';
 		});
 
 		document.getElementById('sampleBg').addEventListener('click', () => {
-			if (!templateImg || hotspots.length === 0) return;
-			const last = hotspots[hotspots.length - 1];
+			if (!templateImg || selectedIndex === -1 || !hotspots[selectedIndex]) return;
+			const hs = hotspots[selectedIndex];
 			
 			// Sample pixel from template image
 			const tempCanvas = document.createElement('canvas');
@@ -425,10 +426,20 @@ import Layout from '../layouts/Layout.astro';
 			const tCtx = tempCanvas.getContext('2d');
 			tCtx.drawImage(templateImg, 0, 0);
 			
-			const pixel = tCtx.getImageData(last.x + 2, last.y + 2, 1, 1).data;
+			const pixel = tCtx.getImageData(hs.x + 2, hs.y + 2, 1, 1).data;
 			const hex = "#" + ("000000" + ((pixel[0] << 16) | (pixel[1] << 8) | pixel[2]).toString(16)).slice(-6);
+			hs.maskColor = hex;
 			elements.maskColor.value = hex;
 			renderPreview();
+		});
+
+		document.getElementById('setTransparent').addEventListener('click', () => {
+			if (selectedIndex === -1 || !hotspots[selectedIndex]) return;
+			hotspots[selectedIndex].maskColor = 'transparent';
+			elements.maskColor.value = "#000000"; // Placeholder for UI
+			elements.fillBg.checked = true; // Turn it on so they see the effect
+			renderPreview();
+			updateHotspotInfo();
 		});
 
 		document.getElementById('magicSetup').addEventListener('click', () => {
@@ -448,18 +459,25 @@ import Layout from '../layouts/Layout.astro';
 			
 			elements.textColor.value = '#064E3B';
 			elements.layoutMode.value = 'landscape8';
-			elements.fillBg.checked = true;
+			elements.fillBg.checked = false; // Ensure it's off by default
 			
 			updateHotspotInfo();
 			renderPreview();
 			selectedIndex = hotspots.length - 1;
+			
+			// Auto-refine colors for all magic hotspots
+			hotspots.forEach((_, i) => refineHotspot(i));
+			
 			elements.nudgeSection.classList.remove('hidden');
 			elements.status.textContent = "Magic Setup Applied for USJ-R Template!";
 		});
 		
 		// Re-render on style change
-		[elements.fontSize, elements.textColor, elements.fontFamily, elements.whiteText, elements.ticketScale, elements.stretchFill, elements.noGaps].forEach(el => {
+		[elements.fontSize, elements.textColor, elements.fontFamily, elements.whiteText, elements.ticketScale, elements.stretchFill, elements.noGaps, elements.fillBg, elements.maskColor].forEach(el => {
 			el.addEventListener('input', () => {
+				if (el === elements.maskColor && selectedIndex !== -1 && hotspots[selectedIndex]) {
+					hotspots[selectedIndex].maskColor = elements.maskColor.value;
+				}
 				renderPreview();
 				if (!elements.previewView.classList.contains('hidden')) {
 					updatePagePreview();
@@ -476,7 +494,7 @@ import Layout from '../layouts/Layout.astro';
 			const reader = new FileReader();
 			reader.onload = (event) => {
 				templateImg = new Image();
-				templateImg.onload = () => {
+				templateImg.onload = async () => {
 					elements.canvas.width = templateImg.naturalWidth;
 					elements.canvas.height = templateImg.naturalHeight;
 					elements.canvas.classList.remove('hidden');
@@ -484,10 +502,13 @@ import Layout from '../layouts/Layout.astro';
 					
 					elements.infoDim.textContent = `${templateImg.naturalWidth} x ${templateImg.naturalHeight} px`;
 					elements.infoScale.textContent = "1:1 (Original)";
-					elements.status.textContent = "Template loaded. Select hotspot.";
+					elements.status.textContent = "Template loaded. Auto-sampling...";
 					
 					updateOrientationBadge();
 					renderPreview();
+
+					// Automatically run OCR to find hotspots and sample colors
+					await runOCR();
 				};
 				templateImg.src = event.target.result;
 			};
@@ -528,20 +549,27 @@ import Layout from '../layouts/Layout.astro';
 				
 				// Draw sample number
 				const num = elements.startNum.value.padStart(4, '0');
-				drawTicketNumber(ctx, num, { x: -hs.width/2, y: -hs.height/2, width: hs.width, height: hs.height });
+				drawTicketNumber(ctx, num, hs);
 				ctx.restore();
 			});
 		}
 
-		function drawTicketNumber(ctx, text, rect) {
+		function drawTicketNumber(ctx, text, hs) {
 			const color = elements.whiteText.checked ? '#ffffff' : elements.textColor.value;
 			const size = parseInt(elements.fontSize.value);
 			const font = elements.fontFamily.value;
 			const shouldFill = elements.fillBg.checked;
 			
 			if (shouldFill) {
-				ctx.fillStyle = elements.maskColor.value;
-				ctx.fillRect(0, 0, rect.width, rect.height);
+				const maskColor = hs.maskColor || elements.maskColor.value;
+				if (maskColor === 'transparent') {
+					ctx.globalCompositeOperation = 'destination-out';
+					ctx.fillRect(-hs.width/2, -hs.height/2, hs.width, hs.height);
+					ctx.globalCompositeOperation = 'source-over';
+				} else {
+					ctx.fillStyle = maskColor;
+					ctx.fillRect(-hs.width/2, -hs.height/2, hs.width, hs.height);
+				}
 			}
 
 			ctx.fillStyle = color;
@@ -549,11 +577,7 @@ import Layout from '../layouts/Layout.astro';
 			ctx.textAlign = 'center';
 			ctx.textBaseline = 'middle';
 			
-			// If rect is already relative to translation, use 0,0
-			const centerX = rect.width / 2;
-			const centerY = rect.height / 2;
-			
-			ctx.fillText(text, centerX, centerY);
+			ctx.fillText(text, 0, 0);
 		}
 
 		// --- Manual Hotspot Selection ---
@@ -623,7 +647,7 @@ import Layout from '../layouts/Layout.astro';
 			renderPreview();
 		}
 
-		function endHotspot() {
+		async function endHotspot() {
 			isDraggingHotspot = false;
 			if (!isDrawing) return;
 			isDrawing = false;
@@ -631,10 +655,127 @@ import Layout from '../layouts/Layout.astro';
 			if (last && last.width < 5) {
 				hotspots.pop(); // Remove if too small
 			} else {
-				updateHotspotInfo();
-				elements.status.textContent = `Hotspot ${hotspots.length} set. Click again for more.`;
+				// Auto-refine the hotspot
+				await refineHotspot(hotspots.length - 1);
+				elements.status.textContent = `Hotspot ${hotspots.length} auto-refined. Click again for more.`;
 				elements.nudgeSection.classList.remove('hidden');
 			}
+			renderPreview();
+		}
+
+		async function refineHotspot(index) {
+			if (!templateImg) return;
+			const hs = hotspots[index];
+			if (!hs || hs.width < 5 || hs.height < 5) return;
+
+			elements.status.textContent = "Auto-detecting number and refining mask...";
+			
+			// Create temp canvas for analysis
+			const tempCanvas = document.createElement('canvas');
+			tempCanvas.width = hs.width;
+			tempCanvas.height = hs.height;
+			const tCtx = tempCanvas.getContext('2d');
+			
+			// Draw the cropped portion of the template
+			tCtx.drawImage(templateImg, hs.x, hs.y, hs.width, hs.height, 0, 0, hs.width, hs.height);
+			const imageData = tCtx.getImageData(0, 0, hs.width, hs.height);
+			const data = imageData.data;
+
+			// 1. Detect Background Color (Sampling edges)
+			const colorCounts = {};
+			const edgeMargin = 2;
+			for (let y = 0; y < hs.height; y++) {
+				for (let x = 0; x < hs.width; x++) {
+					if (x < edgeMargin || x >= hs.width - edgeMargin || y < edgeMargin || y >= hs.height - edgeMargin) {
+						const i = (y * hs.width + x) * 4;
+						const hex = "#" + ((1 << 24) + (data[i] << 16) + (data[i+1] << 8) + data[i+2]).toString(16).slice(1);
+						colorCounts[hex] = (colorCounts[hex] || 0) + 1;
+					}
+				}
+			}
+			let bestColor = "#ffffff";
+			let maxCount = 0;
+			for (const color in colorCounts) {
+				if (colorCounts[color] > maxCount) {
+					maxCount = colorCounts[color];
+					bestColor = color;
+				}
+			}
+			elements.maskColor.value = bestColor;
+
+			// 2. Detect Text Bounding Box (Auto-Snap)
+			// Calculate average brightness of the whole crop
+			let totalBright = 0;
+			for (let i = 0; i < data.length; i += 4) {
+				totalBright += (data[i] + data[i+1] + data[i+2]) / 3;
+			}
+			const avgBright = totalBright / (data.length / 4);
+
+			let minX = hs.width, minY = hs.height, maxX = 0, maxY = 0;
+			let foundPixels = false;
+
+			for (let y = 0; y < hs.height; y++) {
+				for (let x = 0; x < hs.width; x++) {
+					const i = (y * hs.width + x) * 4;
+					const bright = (data[i] + data[i+1] + data[i+2]) / 3;
+					// Detect significant deviation from average brightness (threshold of 40)
+					if (Math.abs(bright - avgBright) > 40) {
+						minX = Math.min(minX, x);
+						minY = Math.min(minY, y);
+						maxX = Math.max(maxX, x);
+						maxY = Math.max(maxY, y);
+						foundPixels = true;
+					}
+				}
+			}
+
+			if (foundPixels) {
+				const padding = 4;
+				const newX = hs.x + minX - padding;
+				const newY = hs.y + minY - padding;
+				const newW = (maxX - minX) + (padding * 2);
+				const newH = (maxY - minY) + (padding * 2);
+
+				// Update the hotspot coordinates
+				hs.x = Math.max(0, newX);
+				hs.y = Math.max(0, newY);
+				hs.width = Math.min(templateImg.naturalWidth - hs.x, newW);
+				hs.height = Math.min(templateImg.naturalHeight - hs.y, newH);
+				hs.maskColor = bestColor; // Store detected color in hotspot
+
+				// 3. Detect Text Color
+				const textColorCounts = {};
+				for (let y = minY; y <= maxY; y++) {
+					for (let x = minX; x <= maxX; x++) {
+						const i = (y * hs.width + x) * 4;
+						const bright = (data[i] + data[i+1] + data[i+2]) / 3;
+						// If it's a contrast pixel (likely text)
+						if (Math.abs(bright - avgBright) > 40) {
+							const hex = "#" + ((1 << 24) + (data[i] << 16) + (data[i+1] << 8) + data[i+2]).toString(16).slice(1);
+							textColorCounts[hex] = (textColorCounts[hex] || 0) + 1;
+						}
+					}
+				}
+				let bestTextColor = null;
+				let maxTextCount = 0;
+				for (const color in textColorCounts) {
+					if (textColorCounts[color] > maxTextCount) {
+						maxTextCount = textColorCounts[color];
+						bestTextColor = color;
+					}
+				}
+				if (bestTextColor) {
+					elements.textColor.value = bestTextColor;
+				}
+
+				// 4. Estimate Font Size
+				const estSize = Math.round((maxY - minY) * 0.9);
+				if (estSize > 10 && estSize < 500) {
+					elements.fontSize.value = estSize;
+				}
+			}
+
+			updateHotspotInfo();
 			renderPreview();
 		}
 
@@ -645,6 +786,15 @@ import Layout from '../layouts/Layout.astro';
 			}
 			const selectedText = selectedIndex !== -1 ? `(Editing #${selectedIndex + 1})` : "";
 			elements.infoHotspot.textContent = `${hotspots.length} Hotspot(s) ${selectedText}`;
+			
+			// Sync color picker with selected hotspot
+			if (selectedIndex !== -1 && hotspots[selectedIndex]) {
+				const color = hotspots[selectedIndex].maskColor;
+				if (color && color !== 'transparent') {
+					elements.maskColor.value = color;
+				}
+				elements.status.textContent = color === 'transparent' ? "Hotspot uses transparent mask." : elements.status.textContent;
+			}
 		}
 
 		// --- OCR Detection ---
@@ -733,6 +883,11 @@ import Layout from '../layouts/Layout.astro';
 						Math.abs(t.x - hs.x) < 40 && Math.abs(t.y - hs.y) < 40
 					))
 				);
+
+				// Refine all detected hotspots (colors and bounds)
+				for (let i = 0; i < hotspots.length; i++) {
+					await refineHotspot(i);
+				}
 				
 				renderPreview();
 				elements.status.textContent = `Found ${hotspots.length} hotspots.`;
@@ -832,7 +987,7 @@ import Layout from '../layouts/Layout.astro';
 						renderCtx.save();
 						renderCtx.translate(hs.x + hs.width/2, hs.y + hs.height/2);
 						renderCtx.rotate((hs.rotation || 0) * Math.PI / 180);
-						drawTicketNumber(renderCtx, currentNum, { x: -hs.width/2, y: -hs.height/2, width: hs.width, height: hs.height });
+						drawTicketNumber(renderCtx, currentNum, hs);
 						renderCtx.restore();
 					});
 					
@@ -987,7 +1142,7 @@ import Layout from '../layouts/Layout.astro';
 					tCtx.save();
 					tCtx.translate(hs.x + hs.width/2, hs.y + hs.height/2);
 					tCtx.rotate((hs.rotation || 0) * Math.PI / 180);
-					drawTicketNumber(tCtx, currentNum, { x: -hs.width/2, y: -hs.height/2, width: hs.width, height: hs.height });
+					drawTicketNumber(tCtx, currentNum, hs);
 					tCtx.restore();
 				});
 
